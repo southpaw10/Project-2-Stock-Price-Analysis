@@ -1,0 +1,389 @@
+---
+title: "Shubham Zod_38A_RTSM_Time Series Analysis_CEAT LTD Stock price analysis"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+#REQUIRED PACKAGES
+packages = c('tseries','forecast','quantmod','car','FinTS','rugarch')
+
+#Load all packages
+lapply(packages, require, character.only = TRUE)
+#lapply(quantmod)
+
+
+
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+
+```{r}
+stock_data = new.env()
+stock_list = c('CEATLTD.NS')
+start_date = as.Date('2015-01-01'); end_date = as.Date('2019-12-31')
+getSymbols(Symbols = stock_list, from = start_date, to = end_date, env = stock_data)
+stock_price=na.omit(stock_data$CEATLTD.NS$CEATLTD.NS.Adjusted)
+#ceat_price
+
+#stock_price = CEATLTD.NS$CEATLTD.NS.Close # Adjusted Closing Price
+class(stock_price) # xts (Time-Series) Object
+stock_price
+plot(stock_price)
+stock_ret = na.omit(diff(log(stock_price))) # Stock Returns
+plot(stock_ret)
+```
+Objective: To analyze the daily returns of CEAT stock from 2015-01-01 to 2019-12-31.
+Analysis: Extracted the adjusted closing prices of CEAT stock, calculated daily returns, and visualized them.
+Result:
+The 'CEAT_return' plot displays the daily returns of CEAT stock over the specified period.
+Implication: 
+The plot indicates the volatility and direction of daily returns for CEAT stock during the given timeframe.
+Observations from the plot can help investors understand the historical performance and risk associated with CEAT stock.
+
+
+
+
+```{r}
+# Required Packages
+packages = c('tseries', 'forecast') 
+
+# Load all Packages
+lapply(packages, require, character.only = TRUE) 
+```
+
+```{r}
+# ---------------------------------------------------------------------------------------------
+
+# Forecasting with Time-Series Data (Univariate) : Procedure
+# **********************************************************
+
+# Given an Univariate Time-Series Data, Perform the following Analysis :
+
+# Step 1 : Check for (Weak) Stationarity :: Augmented Dickey-Fuller (ADF) Test
+# If [Data] Stationary, Proceed to Step 2
+# If [Data] Non-Stationary, Use Transformation (such as First/Second/... Difference | Log | ...) to Transform the Data and Check for Stationarity (Step 1)
+
+# Step 2 : Check for Autocorrelation :: Ljung-Box Test 
+# If [Data | Transformed Data] Do Not Have Autocorrelation, proceed to Step 4
+# If [Data | Transformed Data] Has Autocorrelation, Proceed to Step 3
+
+# Step 3 : Model for Autocorrelation :: ARIMA Models
+# Identify AR | MA Order in the [Data | Transformed Data] using PACF | ACF Plots
+# Use ARIMA(p, d, q) with Appropriate AR Order (p-Lags) | d-Degree of Differencing | MA Order (q-Lags) using PACF | ACF Information to Model the [Data | Transformed Data]
+# Test for Autocorrelation in the [Residual Data 1] | If the ARIMA Model is Appropriate : No Autocorrelation in the [Residual Data 1] | If Autocorrelation in [Residual Data 1], Remodel the [Data | Transformed Data]
+# Proceed to Step 4
+
+# Step 4 : Check for Heteroskedasticity :: ARCH LM Test
+# If [Data | Transformed Data] (Step 2) | [Residual Data 1] (Step 3) Do Not Have Heteroskedasticity, Proceed to Step 6
+# If [Data | Transformed Data] (Step 2) | [Residual Data 1] (Step 3) Has Heteroskedasticity, Proceed to Step 5
+
+# Step 5a : Model for Heteroskedasticity in [Data | Transformed Data] (Step 2) :: GARCH Models
+# If Mean of [Data | Transformed Data] (Step 2) != 0 : De-Mean & Square the [Data | Transformed Data] | If Mean of [Data | Transformed Data] (Step 2) = 0 : Square the [Data | Transformed Data] 
+# Identify ARCH | GARCH Order in the using GARCH Function
+# Use GARCH(p,q) with Appropriate ARCH Order (p-Lags) | GARCH Order (q-Lags) to Model the [Data | Transformed Data]
+# Test for Autocorrelation & Heteroskedasticity in the [Residual Data 2] | If the GARCH Model is Appropriate : No Autocorrelation & Heteroskedasticity in the [Residual Data 2] | If Autocorrelation & Heteroskedasticity in [Residual Data 2], Remodel the Squared [Data | Transformed Data]
+# End of Analysis
+
+# Step 5b : Model for Heteroskedasticity in [Residual Data 1] (Step 3) :: GARCH Models
+# Identify ARCH | GARCH Order in the using GARCH Function
+# Use GARCH(p, q) with Appropriate ARCH Order (p-Lags) | GARCH Order (q-Lags) with ARIMA(p, d, q) Model (in Step 3) in the Mean Equation to Model the [Residual Data 1] 
+# Test for Autocorrelation & Heteroskedasticity in the [Residual Data 2] | If the ARIMA+GARCH Model is Appropriate : No Autocorrelation & Heteroskedasticity in the [Residual Data 2] | If Autocorrelation & Heteroskedasticity in [Residual Data 2], Remodel the [Residual Data 1]
+# End of Analysis
+
+# Step 6 : Model White-Noise Data 
+# If the [Data | Transformed Data] is Stationary, Has No Autocorrelation & Heteroskedasticity, the [Data | Transformed Data] is White-Noise Data
+# Model White-Noise Data with Appropriate Probability Distribution
+# End of Analysis
+
+```
+
+```{r}
+# Augmented Dickey-Fuller (ADF) Test for Stationarity with CEAT Data
+# *******************************************************************
+
+adf_test_ceat = adf.test(stock_price);adf_test_ceat
+# Inference : ceat Time-Series is Non-Stationary
+
+```
+Analysis:
+
+The output of the Augmented Dickey-Fuller (ADF) test on the CEAT stock price data suggests the following:
+
+Test Statistic: The Dickey-Fuller test statistic is -1.4851.
+Lag Order: The test was performed with a lag order of 10.
+p-value: The p-value obtained from the test is 0.7963.
+Based on the p-value obtained, which is significantly greater than the typical significance level of 0.05, there is insufficient evidence to reject the null hypothesis. The null hypothesis of the ADF test is that the time series data is non-stationary. Therefore, we cannot conclude that the CEAT stock price data is stationary.
+
+Implications:
+
+Non-Stationarity: The non-stationarity of the CEAT stock price data implies that the statistical properties of the data, such as the mean and variance, are not constant over time. This could be due to trends, seasonality, or other underlying patterns present in the data.
+
+Modeling Challenges: Non-stationarity poses challenges for time series analysis and forecasting. Traditional models like ARIMA require stationary data for accurate predictions. Therefore, it's essential to transform the non-stationary data into a stationary form before applying such models.
+
+Further Analysis: Given the non-stationarity of the CEAT stock price data, further analysis is required to identify and remove any trends or seasonality present in the data. Techniques such as differencing or detrending can be applied to achieve stationarity.
+
+Model Selection: Depending on the characteristics of the data, alternative models such as SARIMA (Seasonal ARIMA) or models that account for trends and seasonality may be more appropriate for forecasting the CEAT stock prices.
+
+In summary, the non-stationarity of the CEAT stock price data indicates the need for careful preprocessing and selection of appropriate modeling techniques to ensure accurate and reliable forecasts.
+
+```{r}
+ceat_ds = diff(log(stock_price)); plot(ceat_ds) # CEAT (First)return Difference Time-Series
+```
+
+The code computes the first difference of the logarithm of the CEAT stock price (stock_price). This operation aims to transform the data to achieve stationarity. Then, it plots the resulting time series data (ceat_ds), which represents the first-order difference of the logarithmic returns of the CEAT stock price.
+
+```{r}
+ceat_ds=na.omit(ceat_ds)
+adf_test_ceat_ds = adf.test(ceat_ds); adf_test_ceat_ds # Inference : CEAT Difference Time-Series is Stationary
+
+```
+ANALYSIS:
+
+The Augmented Dickey-Fuller test results for the pnj_ds data (the differenced time series of CEAT stock prices) indicate the following:
+
+Test statistic (Dickey-Fuller): -9.1287
+Lag order: 10
+p-value: 0.01
+With a p-value of 0.01, which is less than the typical significance level of 0.05, there is strong evidence to reject the null hypothesis. Therefore, the alternative hypothesis is supported, suggesting that the differenced time series data is stationary.
+
+
+```{r}
+# Ljung-Box Test for Autocorrelation - CEAT Data
+# ***********************************************
+
+lb_test_ceat_ds = Box.test(ceat_ds); lb_test_ceat_ds # Inference : CEAT Difference (Stationary) Time-Series is Autocorrelated as NULL is rejected and p-value<0.0151 | NULL: No Auto correlation | Alternate: Auto Correlation
+```
+The Box-Pierce test results for the ceat_ds data (the differenced time series of CEAT stock prices) indicate the following:
+
+Test statistic (X-squared): 1.1097
+Degrees of freedom (df): 1
+p-value: 0.2921
+With a p-value of 0.2921, which is greater than the typical significance level of 0.05, there is not enough evidence to reject the null hypothesis. Therefore, the inference is that the differenced time series data does not exhibit significant autocorrelation.
+
+ Analysis and Implications:
+
+Autocorrelation Analysis: The Box-Pierce test is commonly used to assess autocorrelation in time series data. With a p-value of 0.2921, which exceeds the significance level of 0.05, there is insufficient evidence to conclude that autocorrelation exists in the differenced time series of CEAT stock prices.
+
+Stationarity Confirmation: The Augmented Dickey-Fuller (ADF) test previously confirmed the stationarity of the differenced CEAT stock price data. This implies that trends, seasonality, or other non-stationary patterns have been removed from the data, making it suitable for time series analysis and forecasting.
+
+Modeling Implications: The absence of significant autocorrelation in the differenced time series suggests that simpler models, such as ARIMA, may be appropriate for forecasting CEAT stock prices. These models rely on the assumption of independence among the residuals, which is supported by the lack of autocorrelation.
+
+Forecasting Considerations: When applying forecasting models to the differenced time series data, analysts can have confidence that the residuals are not systematically correlated with each other. This enhances the reliability of forecasts generated using the data.
+
+```{r}
+# 3.0.3.2. Autocorrelation Function (ACF) | Partial Autocorrelation Function (PACF)
+# *****************************************************************************
+
+acf(stock_price) # ACF of JJ Series
+pacf(stock_price) # PACF of JJ Series
+
+acf(ceat_ds) # ACF of CEAT Difference (Stationary) Series
+pacf(ceat_ds) # PACF of CEAT Difference (Stationary) Series
+```
+The code computes and plots the Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF) for two different series:
+
+For the CEAT stock price data (stock_price):
+
+acf(stock_price) computes and plots the ACF of the CEAT stock price series.
+pacf(stock_price) computes and plots the PACF of the CEAT stock price series.
+For the differenced (stationary) CEAT stock price data (ceat_ds):
+
+acf(ceat_ds) computes and plots the ACF of the differenced CEAT stock price series.
+pacf(ceat_ds) computes and plots the PACF of the differenced CEAT stock price series.
+
+These plots provide insights into the autocorrelation and partial autocorrelation structures of the respective time series data, which are essential for identifying the orders of autoregressive (AR) and moving average (MA) terms in ARIMA modeling.
+
+```{r}
+# 3.1. Auto Regressive Integrated Moving Average (ARIMA) Models
+# *************************************************************
+
+# 3.1.1. ARIMA Models
+# *******************
+
+# AR (p-Lag) Model : y(t) = c1 + a1*y(t-1) + a2*y(t-2) + ... + ap*y(t-p) + e(t) where e = error == White Noise | AR-1 Model : y(t) = c + a1*y(t-1) + e(t)
+# MA (q-Lag) Model : y(t) = c2 + b1*e(t-1) + b2*e(t-2) + ... + bp*e(t-p) where e = Error == White Noise | MA-1 Model : y(t) = d + b1*e(t-1)
+# ARMA (p, q) Model : y(t) = c + a1*y(t-1) + ... + ap*y(t-p) + b1*e(t-1) + ... + bp*e(t-p) + e(t) | ARMA (1, 1) Model : y(t) = c + a1*y(t-1) + b1*e(t-1) + e(t)
+
+# ARIMA(p, d, q) = AR Order (p-Lags) | d-Degree of Differencing | MA Order (q-Lags)
+
+# Note: The Degree of Differencing for a Time Series data such as Asset Returns is d=0. For a Time Series data such as Asset Prices the Degree of Differencing is usually d=1.
+# Identify AR Order : PACF Cuts Off after p Lags | ACF Tails Off
+# Identify MA Order : ACF Cuts Off after q Lags | PACF Tails Off
+```
+
+```{r}
+arma_pq_ceat_ds = auto.arima(ceat_ds); arma_pq_ceat_ds #p-lag=2, q-lag=2
+```
+The output from the auto.arima function suggests an ARIMA(2,0,2) model with zero mean for the differenced (stationary) CEAT stock price data (ceat_ds). 
+
+Detailed Analysis and Implications:
+
+Model Interpretation: The ARIMA(2,0,2) model indicates that the current value of the differenced CEAT stock prices depends linearly on the two most recent values and the two most recent errors.
+
+Coefficient Analysis: The estimated coefficients represent the strength and direction of the relationships between the current value of the series and its past values and errors.
+
+Standard Errors: These values measure the uncertainty in the estimated coefficients. Lower standard errors suggest higher precision in the estimation.
+
+Variance: The variance represents the dispersion of the errors around the fitted values. A lower variance indicates a better fit of the model to the data.
+
+Information Criteria (AIC, AICc, BIC): These criteria provide measures of the relative quality of different statistical models. Lower values indicate a better trade-off between model fit and complexity.
+
+Forecasting: The ARIMA(2,0,2) model can be used for forecasting future values of the differenced CEAT stock prices. However, it's essential to validate the model's performance and assess its predictive accuracy before using it for actual forecasts.
+
+In summary, the ARIMA(2,0,2) model provides a statistical framework for analyzing and forecasting the differenced CEAT stock prices. Careful interpretation of the coefficients and model diagnostics is crucial for making informed decisions in time series analysis and forecasting.
+
+```{r}
+ceat_ds_fpq = forecast(arma_pq_ceat_ds, h = 500)
+plot(ceat_ds_fpq)
+```
+The code generates forecasts for the differenced (stationary) CEAT stock price data (ceat_ds) using the ARIMA(2,0,2) model (arma_pq_ceat_ds) previously fitted. It then plots the forecasted values.
+
+This code segment computes forecasts for 500 future time points based on the ARIMA(2,0,2) model fitted to the differenced CEAT stock price data and visualizes these forecasted values in a plot.
+
+```{r}
+# Ljung-Box Test for Autocorrelation - Model Residuals
+# ****************************************************
+
+lb_test_arma_pq_ceat_ds = Box.test(arma_pq_ceat_ds$residuals); lb_test_arma_pq_ceat_ds
+#p-value>alpha
+```
+The Box-Pierce test examines autocorrelation in the residuals of the ARIMA(2,0,2) model applied to the differenced CEAT stock price data (arma_pq_ceat_ds$residuals). The results are as follows:
+
+Test Statistic (X-squared): 0.042871
+Degrees of Freedom (df): 1
+p-value: 0.836
+With a p-value of 0.836, which is substantially greater than the conventional significance level of 0.05, there isn't adequate evidence to reject the null hypothesis. Hence, we do not identify significant autocorrelation in the residuals of the ARIMA(2,0,2) model.
+
+
+```{r}
+
+# Test for Volatility Clustering or Heteroskedasticity: Box Test 
+ceat_ret_sq = arma_pq_ceat_ds$residuals^2 # Residual Variance (Since Mean Returns is approx. 0)
+plot(ceat_ret_sq)
+ceat_ret_sq_box_test = Box.test(ceat_ret_sq, lag = 2) # H0: Return Variance Series is Not Serially Correlated
+ceat_ret_sq_box_test # Inference : Return Variance Series is Autocorrelated (Has Volatility Clustering)
+```
+The code segment conducts a Box test to assess the presence of volatility clustering or heteroskedasticity in the CEAT stock returns. Here's a detailed analysis of the output:
+
+Test Statistic (X-squared): The Box test statistic is calculated to be 9.0038.
+Degrees of Freedom (df): The test has 2 degrees of freedom.
+p-value: The p-value obtained from the test is 0.01109.
+With a p-value of 0.01109, which is less than the conventional significance level of 0.05, we reject the null hypothesis. Therefore, the inference is that the return variance series exhibits autocorrelation or volatility clustering, indicating the presence of heteroskedasticity in the CEAT stock returns.
+
+Detailed Analysis and Implications:
+
+Volatility Clustering: The presence of significant autocorrelation in the squared residuals suggests that the volatility of CEAT stock returns tends to cluster over time. This phenomenon, known as volatility clustering, indicates that periods of high volatility are followed by periods of high volatility, and vice versa.
+
+Model Assumptions: The presence of heteroskedasticity violates one of the assumptions of many econometric models, including linear regression and ARIMA models. Therefore, failing to account for heteroskedasticity may lead to biased parameter estimates and inaccurate statistical inference.
+
+Risk Management: Understanding volatility clustering is crucial for risk management and portfolio optimization. Investors and traders should account for the clustering nature of volatility when making investment decisions and constructing portfolios.
+
+Model Adjustments: To address heteroskedasticity, more sophisticated modeling techniques such as ARCH (Autoregressive Conditional Heteroskedasticity) or GARCH (Generalized Autoregressive Conditional Heteroskedasticity) models can be employed. These models explicitly model the conditional variance of the series, allowing for more accurate risk assessments and forecasts.
+
+
+
+```{r}
+library(FinTS)
+# Test for Volatility Clustering or Heteroskedasticity: ARCH Test
+ceat_ret_arch_test = ArchTest(arma_pq_ceat_ds$residuals^2, lags = 2) # H0: No ARCH Effects
+ceat_ret_arch_test # Inference : Return Series is Heteroskedastic (Has Volatility Clustering)
+```
+The code conducts an ARCH (Autoregressive Conditional Heteroskedasticity) test to assess the presence of volatility clustering or heteroskedasticity in the CEAT stock returns. Here's a detailed analysis of the output:
+
+Test Statistic (Chi-squared): The ARCH LM-test statistic is computed to be 0.51479.
+Degrees of Freedom (df): The test has 2 degrees of freedom.
+p-value: The p-value obtained from the test is 0.7731.
+With a p-value of 0.7731, which is substantially greater than the conventional significance level of 0.05, we fail to reject the null hypothesis. Therefore, there is insufficient evidence to suggest the presence of ARCH effects or volatility clustering in the CEAT stock returns.
+
+Detailed Analysis and Implications:
+
+Absence of ARCH Effects: The ARCH test results indicate that the squared residuals do not exhibit significant autocorrelation or clustering of volatility over time. This suggests that the variance of the CEAT stock returns may be relatively stable and not subject to significant clustering patterns.
+
+Model Assumptions: The absence of ARCH effects aligns with the assumption of many econometric models, including linear regression and ARIMA models. However, it's important to note that other forms of heteroskedasticity may still be present and should be considered in the modeling process.
+
+Risk Management: While the absence of significant ARCH effects may indicate relatively stable volatility, it's essential for investors and portfolio managers to continue monitoring and managing risk effectively. Unexpected changes in volatility can have significant implications for portfolio performance and risk exposure.
+
+
+```{r}
+# GARCH Model
+garch_model1 = ugarchspec(variance.model = list(model = 'sGARCH', garchOrder = c(1,1)), mean.model = list(armaOrder = c(0,0), include.mean = TRUE))
+ceat_ret_garch1 = ugarchfit(garch_model1, data = arma_pq_ceat_ds$residuals^2); ceat_ret_garch1
+
+```
+
+The code fits a GARCH (Generalized Autoregressive Conditional Heteroskedasticity) model to the squared residuals of the ARIMA(2,0,2) model applied to the CEAT stock returns. Here's an analysis of the output:
+
+GARCH Model Specification: The GARCH model specification is defined with a variance model of type 'sGARCH' (standard GARCH) and parameters (1,1) indicating one lag each for the ARCH and GARCH components.
+
+Model Parameters:
+
+mu: The estimated mean of the residuals is 0.3790.
+omega: The estimated constant term in the variance equation is 5.3971.
+alpha1: The estimated coefficient for the lagged squared residuals (ARCH effect) is 0.3790.
+beta1: The estimated coefficient for the lagged conditional variances (GARCH effect) is 0.3787.
+Diagnostic Tests:
+
+Individual Statistics: The individual statistics (mu, omega, alpha1, beta1) and their corresponding critical values are provided. These statistics assess the significance of each parameter in the model.
+Sign Bias Test: This test checks for any systematic biases in the model residuals.
+Adjusted Pearson Goodness-of-Fit Test: This test evaluates the overall goodness-of-fit of the GARCH model to the data. The p-values obtained for different group sizes (20, 30, 40, 50) indicate a good fit of the model to the data, with all p-values being close to zero.
+
+Implications:
+
+The estimated GARCH model suggests that the conditional variance of the CEAT stock returns exhibits autoregressive and conditional heteroskedasticity patterns.
+
+The significance of the model parameters indicates that both the ARCH and GARCH effects are important in capturing the volatility dynamics of the stock returns.
+
+The goodness-of-fit tests indicate that the GARCH model adequately fits the observed data, suggesting its suitability for modeling and forecasting the volatility of CEAT stock returns.
+
+
+```{r}
+# Test for Volatility Clustering or Heteroskedasticity: ARCH Test
+ceat_garch_arch_test = ArchTest(residuals(ceat_ret_garch1)^2, lags = 1) # H0: No ARCH Effects
+ceat_garch_arch_test # Inference : Return Series is Heteroskedastic (Has Volatility Clustering)
+#ceat_ret_garch1
+```
+The code segment conducts an ARCH (Autoregressive Conditional Heteroskedasticity) test to examine the presence of volatility clustering or heteroskedasticity in the residuals of the GARCH model fitted to CEAT stock returns. Here's the interpretation of the output:
+
+ARCH Test Statistic: The ARCH LM-test statistic is computed to be 0.0079746.
+Degrees of Freedom (df): The test has 1 degree of freedom.
+p-value: The p-value obtained from the test is 0.9288.
+With a p-value of 0.9288, which is substantially greater than the conventional significance level of 0.05, we fail to reject the null hypothesis. Therefore, there is insufficient evidence to suggest the presence of ARCH effects or volatility clustering in the residuals of the GARCH model.
+
+This implies that the residuals from the GARCH model do not exhibit significant autocorrelation or clustering of volatility over time. Consequently, the GARCH model adequately captures the volatility dynamics of the CEAT stock returns, and there is no evidence of additional volatility clustering beyond what is accounted for by the model.
+
+In summary, the ARCH test results suggest that the GARCH model provides a satisfactory representation of the volatility patterns in the CEAT stock returns, and there is no need to incorporate additional ARCH effects into the model.
+
+
+```{r}
+garch_model2 = ugarchspec(variance.model = list(model = 'sGARCH', garchOrder = c(1,1)), mean.model = list(armaOrder = c(2,2), include.mean = FALSE))
+ceat_ret_garch2 = ugarchfit(garch_model2, data = ceat_ds); ceat_ret_garch2
+
+# GARCH Forecast
+ceat_ret_garch_forecast1 = ugarchforecast(ceat_ret_garch1, n.ahead = 500); ceat_ret_garch_forecast1
+ceat_ret_garch_forecast2 = ugarchforecast(ceat_ret_garch2, n.ahead = 500); ceat_ret_garch_forecast2
+```
+The code segment fits two GARCH (Generalized Autoregressive Conditional Heteroskedasticity) models to the CEAT stock returns data and generates forecasts using these models. Here's an overview of the process:
+
+Model Specification:
+
+GARCH Model 1: This model is specified with a variance model of type 'sGARCH' (standard GARCH) and parameters (1,1) indicating one lag each for the ARCH and GARCH components. The mean model is specified with ARMA(2,2) orders and excludes the mean.
+1111
+GARCH Model 2: Similar to Model 1, this model also has a variance model of type 'sGARCH' with parameters (1,1) for the ARCH and GARCH components. However, the mean model is specified with ARMA(2,2) orders and includes the mean.
+
+Model Fitting:
+
+The ugarchfit function is used to fit each GARCH model to the CEAT stock returns data (ceat_ds).
+GARCH Forecast:
+
+For each fitted GARCH model, the ugarchforecast function is utilized to generate forecasts for the next 500 periods.
+
+By fitting these GARCH models and generating forecasts, the intention is to model and predict the volatility of CEAT stock returns over the specified forecast horizon. These forecasts can be valuable for risk management, portfolio optimization, and trading strategies by providing insights into future volatility levels.
+
+
+```{r}
+plot(ceat_ret_garch_forecast2)
+```
